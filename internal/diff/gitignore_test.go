@@ -138,6 +138,48 @@ func TestIsPathExcluded_DirectoryPatterns(t *testing.T) {
 	}
 }
 
+func TestIsPathExcluded_NegatedDirectoryPatterns(t *testing.T) {
+	tests := []struct {
+		name     string
+		relPath  string
+		patterns []string
+		want     bool
+	}{
+		{
+			name:     "root directory re-included",
+			relPath:  "src/a.go",
+			patterns: []string{"/*/", "!/src/"},
+			want:     false,
+		},
+		{
+			name:     "relative directory re-included",
+			relPath:  "src/a.go",
+			patterns: []string{"src/", "!src/"},
+			want:     false,
+		},
+		{
+			name:     "negated directory does not re-include files",
+			relPath:  "src/a.go",
+			patterns: []string{"*", "!*/"},
+			want:     true,
+		},
+		{
+			name:     "file negation cannot bypass an excluded parent",
+			relPath:  "src/a.go",
+			patterns: []string{"src/", "!src/a.go"},
+			want:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsPathExcluded(".", tt.relPath, tt.patterns)
+			if got != tt.want {
+				t.Errorf("IsPathExcluded(%q, %v) = %v, want %v", tt.relPath, tt.patterns, got, tt.want)
+			}
+		})
+	}
+}
+
 // allowListGitignore is the "ignore everything, then re-include" idiom from
 // github/gitignore's Go.AllowList.gitignore. Repositories using it are the
 // reason negation patterns cannot be discarded: the leading `*` matches every
