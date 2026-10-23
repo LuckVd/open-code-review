@@ -333,7 +333,7 @@ func (p *Provider) isPathExcluded(relPath string, gitignorePatterns []string) bo
 			directoryPath := strings.Join(parts[:i+1], "/")
 			var matched bool
 			if directoryOnly {
-				matched = matchGitignoreDirectoryPath(directoryPath, body)
+				matched = matchGitignoreDirectoryEntry(directoryPath, body)
 			} else {
 				matched = matchGitignoreBody(directoryPath, body)
 			}
@@ -453,6 +453,26 @@ func matchGitignoreDirectoryPath(directoryPath, pattern string) bool {
 		}
 	}
 	return false
+}
+
+// matchGitignoreDirectoryEntry reports whether pattern matches this directory
+// itself. Unlike matchGitignoreDirectoryPath, it does not match ancestor
+// components because each directory has a separate exclusion state.
+func matchGitignoreDirectoryEntry(directoryPath, pattern string) bool {
+	pattern, anchored := strings.CutPrefix(pattern, "/")
+	if pattern == "" || directoryPath == "" {
+		return false
+	}
+
+	// An unanchored pattern without slashes matches a directory name at any
+	// depth. Anchored or slash-containing patterns must match its full path.
+	if !anchored && !strings.Contains(pattern, "/") {
+		if lastSlash := strings.LastIndex(directoryPath, "/"); lastSlash >= 0 {
+			directoryPath = directoryPath[lastSlash+1:]
+		}
+	}
+	matched, err := doublestar.Match(pattern, directoryPath)
+	return err == nil && matched
 }
 
 // partitionDiffs keeps diffs filtered by built-in directory rules available

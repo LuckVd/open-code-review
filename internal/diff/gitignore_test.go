@@ -152,6 +152,30 @@ func TestIsPathExcluded_NegatedDirectoryPatterns(t *testing.T) {
 			want:     false,
 		},
 		{
+			name:     "re-including parent does not re-include ignored child",
+			relPath:  "src/build/out.go",
+			patterns: []string{"build/", "/*/", "!/src/"},
+			want:     true,
+		},
+		{
+			name:     "nested ignored directory stays excluded",
+			relPath:  "ui/node_modules/x.js",
+			patterns: []string{"node_modules/", "/*/", "!/ui/"},
+			want:     true,
+		},
+		{
+			name:     "slashless parent negation does not re-include child",
+			relPath:  "src/vendor/lib.go",
+			patterns: []string{"vendor/", "!src/"},
+			want:     true,
+		},
+		{
+			name:     "file-style ignored directory stays excluded",
+			relPath:  "tools/build/x.go",
+			patterns: []string{"build", "!tools/"},
+			want:     true,
+		},
+		{
 			name:     "relative directory re-included",
 			relPath:  "src/a.go",
 			patterns: []string{"src/", "!src/"},
